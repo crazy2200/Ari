@@ -1,8 +1,9 @@
 from pygame import *
 import pygame
+import random
 
 WIDTH = 1588
-HEIGHT = 1000
+HEIGHT = 999
 FPS = 140
 
 init()
@@ -26,7 +27,6 @@ class Person:
 
 class Player(Person):
     def __init__(self, x, y, r, color, nickname):
-        # Исправлено: убран extra-аргумент self
         super().__init__(x, y, r, color, nickname)
 
     def update(self):
@@ -34,7 +34,60 @@ class Player(Person):
         self.x = mx
         self.y = my
 
+class Bot(Person):
+    def __init__(self, x, y, r, color, nickname, speed=2):
+        super().__init__(x, y, r, color, nickname)
+        self.speed = speed
+        # Випадковий напрямок руху по осях X та Y
+        self.dx = random.choice([-1, 1]) * self.speed
+        self.dy = random.choice([-1, 1]) * self.speed
+
+    def update(self):
+        # Рухаємо бота
+        self.x += self.dx
+        self.y += self.dy
+
+        # Відскок від меж вікна, щоб боти не вилітали за екрани
+        if self.x - self.r <= 0 or self.x + self.r >= WIDTH:
+            self.dx *= -1
+        if self.y - self.r <= 0 or self.y + self.r >= HEIGHT:
+            self.dy *= -1
+
+
+class Eat(Person):
+    def __init__(self, x, y, r, color, nickname):
+        super().__init__(x, y, r, color, nickname)
+
+    def check_collision(self, player_x, player_y, player_r):
+        ...
+
+
+# Створюємо гравця
 player = Player(WIDTH // 2, HEIGHT // 2, 10, "red", "dsdjsusfu")
+
+# Створюємо їжу
+eats = [
+    Eat(
+        random.randint(-3000, 3000),
+        random.randint(-3000, 3000),
+        10,
+        ((random.randint(0,255)), (random.randint(0,255)), (random.randint(0,255))),
+        None
+    )
+    for i in range(300)
+]
+
+# Створюємо список ботів
+bots = [
+    Bot(
+        random.randint(100, WIDTH - 100),
+        random.randint(100, HEIGHT - 100),
+        10,
+        "blue",
+        f"Bot_{i}"
+    )
+    for i in range(5)
+]
 
 running = True
 while running:
@@ -42,13 +95,21 @@ while running:
         if event.type == QUIT:
             running = False
 
-    # 1. Обновляем позицию
+    # 1. Обновляем позиції
     player.update()
+    for bot in bots:
+        bot.update()
 
     # 2. Очищаем экран
     window.fill("white")
 
     # 3. Рисуем объекты поверх очищенного экрана
+    for bot in bots:
+        bot.draw(window)
+
+    for eat in eats:
+        eat.draw(window)
+
     player.draw(window)
 
     # 4. Обновляем дисплей
