@@ -1,10 +1,13 @@
 from pygame import *
-import pygame
+import math
 import random
 
-WIDTH = 1588
-HEIGHT = 999
+WIDTH = 1400
+HEIGHT = 777
 FPS = 140
+
+MAP_SIZE = 3000
+
 
 init()
 window = display.set_mode((WIDTH, HEIGHT))
@@ -21,8 +24,22 @@ class Person:
     def update(self):
         pass
 
-    def draw(self, screen):
-        draw.circle(screen, self.color, (self.x, self.y), self.r)
+    def check_collision(self, other):
+        if self.r <= other.r * 1.10:
+            return False
+
+        distance = math.hypot(self.x - other.x, self.y - other.y)
+        return distance <= self.r
+
+
+
+    def draw(self, screen, person, scale):
+        def draw(self, screen, person, scale):
+            sx = int((self.x - person.x) * scale + WIDTH // 2)
+            sy = int((self.y - person.y) * scale + HEIGHT // 2)
+            sr = int(self.r - person.r)
+
+            draw.circle(screen, self.color, (sx, sy), max(1, sr))
         # todo add nickname
 
 class Player(Person):
@@ -59,8 +76,8 @@ class Eat(Person):
         super().__init__(x, y, r, color, nickname)
 
     def check_collision(self, player_x, player_y, player_r):
-        ...
-
+        distance = math.hypot(self.x - player_x, self.y - player_y)
+        return distance <= self.r + player_r
 
 # Створюємо гравця
 player = Player(WIDTH // 2, HEIGHT // 2, 10, "red", "dsdjsusfu")
@@ -68,8 +85,8 @@ player = Player(WIDTH // 2, HEIGHT // 2, 10, "red", "dsdjsusfu")
 # Створюємо їжу
 eats = [
     Eat(
-        random.randint(-3000, 3000),
-        random.randint(-3000, 3000),
+        random.randint(-MAP_SIZE, MAP_SIZE),
+        random.randint(-MAP_SIZE, MAP_SIZE),
         10,
         ((random.randint(0,255)), (random.randint(0,255)), (random.randint(0,255))),
         None
@@ -91,8 +108,8 @@ bots = [
 
 running = True
 while running:
-    for event in pygame.event.get():
-        if event.type == QUIT:
+    for e in event.get():
+        if e.type == QUIT:
             running = False
 
     # 1. Обновляем позиції
@@ -100,20 +117,36 @@ while running:
     for bot in bots:
         bot.update()
 
+    persons = [player] + bots
+    for person in persons:
+        for eat in eats:
+            if eat.check_collision(person.x, person.y, person.r):
+                person.r *= 1.05
+
+                eat.x = random.randint(-MAP_SIZE, MAP_SIZE)
+                eat.y = random.randint(-MAP_SIZE, MAP_SIZE)
+
+        if player.check_collision(person):
+            person.r = math.sqrt(person.x ** 2 + person.y ** 2 * 0.5)
+            persons.remove(person)
+            bots.remove(person)
+
     # 2. Очищаем экран
     window.fill("white")
 
     # 3. Рисуем объекты поверх очищенного экрана
+
+    scale = max(0,25, min(50.0 / player.r, 1.2))
+
     for bot in bots:
-        bot.draw(window)
+        bot.draw(window,player, scale)
 
     for eat in eats:
-        eat.draw(window)
+        eat.draw(window, player, scale)
 
-    player.draw(window)
+    player.draw(window, player, scale)
 
     # 4. Обновляем дисплей
     display.update()
     clock.tick(FPS)
-
-pygame.quit()
+quit()
