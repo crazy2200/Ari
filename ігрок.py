@@ -34,22 +34,32 @@ class Person:
 
 
     def draw(self, screen, person, scale):
-        def draw(self, screen, person, scale):
-            sx = int((self.x - person.x) * scale + WIDTH // 2)
-            sy = int((self.y - person.y) * scale + HEIGHT // 2)
-            sr = int(self.r - person.r)
+        sx = int((self.x - person.x) * scale + WIDTH // 2)
+        sy = int((self.y - person.y) * scale + HEIGHT // 2)
+        sr = int(self.r * scale)
 
+        if -sr <= WIDTH + sr and -sr <= sr <= HEIGHT + sr:
             draw.circle(screen, self.color, (sx, sy), max(1, sr))
+
         # todo add nickname
 
 class Player(Person):
     def __init__(self, x, y, r, color, nickname):
         super().__init__(x, y, r, color, nickname)
+        self.speed = 2
 
     def update(self):
         mx, my = mouse.get_pos()
-        self.x = mx
-        self.y = my
+        dx = mx - WIDTH // 2
+        dy = my - HEIGHT // 2
+        dist = math.hypot(dx, dy)
+
+        if dist > 10:
+            self.x += (dx / dist) * self.speed
+            self.y += (dy / dist) * self.speed
+        # todo межі мапи
+
+
 
 class Bot(Person):
     def __init__(self, x, y, r, color, nickname, speed=2):
@@ -136,7 +146,7 @@ while running:
 
     # 3. Рисуем объекты поверх очищенного экрана
 
-    scale = max(0,25, min(50.0 / player.r, 1.2))
+    scale = max(0.25, min(50.0 / player.r, 1.2))
 
     for bot in bots:
         bot.draw(window,player, scale)
